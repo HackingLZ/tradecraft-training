@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adversarial Tradecraft: Operational Security Training</title>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090C;--card:#0E0F14;--border:#1C1E26;
+  --text:#CEC8BA;--muted:#4E4D5A;
+  --amber:#C8901E;--amber-bright:#E8A82A;--amber-dim:#6B4B0E;--amber-glow:rgba(200,144,30,0.07);
+  --red:#8B2E2E;--red-dim:#3A1515;
+  --mono:'Courier Prime',monospace;--serif:'Lora','Georgia',serif;
+}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-family:var(--serif);overflow:hidden}
+
+/* ── CHROME ──────────────────────────────────────── */
+.classbar{
+  position:fixed;top:0;left:0;right:0;height:26px;
+  background:rgba(200,144,30,0.06);border-bottom:1px solid var(--amber-dim);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;letter-spacing:.35em;color:var(--amber);z-index:200
+}
+.progress{position:fixed;bottom:0;left:0;height:2px;background:var(--amber);transition:width .35s ease;z-index:200}
+.counter{
+  position:fixed;bottom:12px;right:20px;
+  font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.1em;z-index:200
+}
+.nav{
+  position:fixed;top:50%;transform:translateY(-50%);
+  width:40px;height:40px;background:transparent;
+  border:1px solid var(--border);color:var(--muted);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:16px;z-index:200;transition:all .2s
+}
+.nav:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+.nav-prev{left:12px}.nav-next{right:12px}
+
+/* ── SLIDE BASE ──────────────────────────────────── */
+.slide{
+  position:absolute;top:0;left:0;width:100%;height:100%;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:56px 80px 44px 86px;
+  opacity:0;pointer-events:none;transition:opacity .35s ease
+}
+.slide.active{opacity:1;pointer-events:all}
+
+/* left accent line */
+.slide::after{
+  content:'';position:absolute;left:60px;top:56px;bottom:44px;width:2px;
+  background:linear-gradient(to bottom,var(--amber-dim),transparent 80%);
+}
+
+/* ghosted slide number */
+.ghost{
+  position:absolute;right:72px;top:44px;
+  font-family:var(--mono);font-weight:700;
+  font-size:clamp(80px,11vw,130px);
+  color:rgba(200,144,30,0.06);line-height:1;user-select:none;pointer-events:none
+}
+
+/* ── TYPOGRAPHY ──────────────────────────────────── */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.4em;color:var(--amber);margin-bottom:10px;text-transform:uppercase}
+.heading{font-family:var(--mono);font-weight:700;font-size:clamp(22px,2.8vw,36px);color:#EDE7D5;line-height:1.15;letter-spacing:-.01em;margin-bottom:10px}
+.lesson{
+  font-family:var(--serif);font-size:15px;font-style:italic;color:var(--amber);
+  border-left:2px solid var(--amber-dim);padding-left:16px;margin-bottom:28px;line-height:1.5
+}
+
+/* ── CONTENT GRID ────────────────────────────────── */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.grid.wide{grid-template-columns:3fr 2fr}
+.grid.single{grid-template-columns:1fr;max-width:780px}
+
+/* ── BULLETS ─────────────────────────────────────── */
+ul.pts{list-style:none;display:flex;flex-direction:column;gap:12px}
+ul.pts li{font-size:15px;line-height:1.55;padding-left:18px;position:relative;color:var(--text)}
+ul.pts li::before{content:'▸';position:absolute;left:0;color:var(--amber);font-size:11px;top:4px}
+ul.pts li strong{color:#EDE7D5;font-weight:500}
+ul.pts li em{color:var(--amber-bright);font-style:italic}
+
+/* ── CALLOUT BOX ─────────────────────────────────── */
+.box{
+  background:var(--amber-glow);border:1px solid var(--amber-dim);border-left:3px solid var(--amber);
+  padding:16px 18px;font-family:var(--mono);font-size:12.5px;line-height:1.65;color:var(--text)
+}
+.box + .box{margin-top:10px}
+.box-label{font-size:9px;letter-spacing:.3em;color:var(--amber);margin-bottom:7px}
+.box.red{background:rgba(139,46,46,0.08);border-color:#5A2020;border-left-color:var(--red)}
+.box.red .box-label{color:#C06060}
+
+/* ── LAYER DIAGRAM ───────────────────────────────── */
+.layers{display:flex;flex-direction:column;gap:3px}
+.layer{
+  padding:9px 14px;border:1px solid var(--border);
+  font-family:var(--mono);font-size:12px;color:var(--muted);
+  display:flex;justify-content:space-between;align-items:center
+}
+.layer.on{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+.layer span{font-size:9px;letter-spacing:.2em;opacity:.8}
+
+/* ── FAILURE ITEMS ───────────────────────────────── */
+.fail{padding:14px 14px 14px 38px;border:1px solid var(--red-dim);margin-bottom:9px;position:relative}
+.fail::before{content:'✗';position:absolute;left:14px;top:14px;color:var(--red);font-size:13px}
+.fail h4{font-family:var(--mono);font-size:11.5px;color:#C06060;margin-bottom:4px;letter-spacing:.04em}
+.fail p{font-size:13px;color:var(--muted);line-height:1.5}
+
+/* ── QUICK REF GRID ──────────────────────────────── */
+.refgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.ref{padding:11px 13px;border:1px solid var(--border);background:var(--card)}
+.ref-n{font-family:var(--mono);font-size:12px;color:var(--amber-dim);margin-bottom:4px}
+.ref-t{font-family:var(--mono);font-size:14px;color:var(--text);font-weight:700;margin-bottom:4px;letter-spacing:.02em}
+.ref-d{font-family:var(--serif);font-size:13px;color:var(--muted);font-style:italic;line-height:1.4}
+.ref.accent{background:rgba(200,144,30,0.05);border-color:var(--amber-dim)}
+.ref.accent .ref-n,.ref.accent .ref-t{color:var(--amber)}
+
+/* ── TITLE SLIDE ─────────────────────────────────── */
+.slide-title{padding:56px 100px;justify-content:flex-end;padding-bottom:90px}
+.slide-title::after{display:none}
+.t-eye{font-family:var(--mono);font-size:10px;letter-spacing:.5em;color:var(--amber);margin-bottom:28px}
+.t-main{font-family:var(--mono);font-weight:700;font-size:clamp(44px,7vw,80px);color:#EDE7D5;line-height:1;letter-spacing:-.02em;margin-bottom:14px}
+.t-sub{font-family:var(--serif);font-size:19px;font-style:italic;color:var(--muted);margin-bottom:52px}
+.t-rule{width:72px;height:1px;background:var(--amber-dim);margin-bottom:40px}
+.t-note{font-family:var(--mono);font-size:11px;color:var(--amber-dim);border-left:2px solid var(--amber-dim);padding-left:14px;letter-spacing:.12em}
+
+/* ── META SLIDE ──────────────────────────────────── */
+.meta-stmt{
+  font-family:var(--mono);font-size:clamp(16px,2.2vw,22px);color:#EDE7D5;
+  line-height:1.5;padding:28px 36px;border:1px solid var(--amber-dim);
+  border-left:4px solid var(--amber);margin-bottom:28px
+}
+.meta-stmt em{color:var(--amber-bright);font-style:italic}
+
+/* ── DISGUISE TABLE ──────────────────────────────── */
+.dguide{font-family:var(--mono);font-size:12px;line-height:2;list-style:none}
+.dguide li{padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:10px}
+.dguide li span{color:var(--muted);flex:1}
+.dguide li.good span{color:var(--text)}
+.dguide li.best span{color:#90C878}
+.dguide li .mk{width:16px;text-align:center;flex-shrink:0}
+</style>
+</head>
+<body>
+<div id="progress" class="progress"></div>
+<div id="counter" class="counter">01 / 17</div>
+<button class="nav nav-prev" id="prev">←</button>
+<button class="nav nav-next" id="next">→</button>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 0 — TITLE
+═══════════════════════════════════════════════════════ -->
+<div class="slide slide-title active" data-i="0">
+  <div class="t-eye">ADVERSARIAL OPERATIONS TRAINING SERIES — MODULE 1</div>
+  <div class="t-main">ADVERSARIAL<br>TRADECRAFT</div>
+  <div class="t-sub">Operational Security &amp; Effectiveness</div>
+  <div class="t-rule"></div>
+  <ul class="pts" style="max-width:520px;margin-bottom:44px">
+    <li>Derived from analysis of real-world operations</li>
+    <li>Focused on <strong>generalizable principles</strong>, not specific tools or targets</li>
+    <li>Applicable to authorized red team operations &amp; penetration testing engagements</li>
+  </ul>
+  <div class="t-note">← → arrow keys &nbsp;·&nbsp; swipe &nbsp;·&nbsp; click arrows to navigate</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 1 — WHY OPERATIONS FAIL
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="1">
+  <div class="ghost">00</div>
+  <div class="eyebrow">Context — Before We Start</div>
+  <div class="heading">Why Operations Fail</div>
+  <div class="lesson">"Most operations aren't burned by sophisticated detection. They're burned by predictable, avoidable mistakes."</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>Evidence that <strong>persists after the operation ends</strong></li>
+      <li>Tools that require <strong>perfect operator execution</strong> every single time</li>
+      <li>Infrastructure that can be <strong>traced back to the operator</strong></li>
+      <li>C2 behavior that <strong>deviates from expected baseline traffic</strong></li>
+      <li>Cleanup that exists as a checklist <strong>instead of being automatic</strong></li>
+      <li>Corner-cuts taken under pressure that <strong>become permanent fixtures</strong></li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">THE GOAL</div>
+        Build operations where failure requires an adversary to be both skilled and lucky — not merely patient.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">THE STANDARD</div>
+        A forensic investigator should find <em>nothing</em>. Not "very little." Nothing. That is the only acceptable outcome.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 2 — PRINCIPLE 01: COMPARTMENTALIZE
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="2">
+  <div class="ghost">01</div>
+  <div class="eyebrow">Principle 01</div>
+  <div class="heading">Separate Your<br>Working Environment</div>
+  <div class="lesson">Keep engagement data, credentials, and tooling isolated from your daily machine and from each other.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>Use <strong>dedicated VMs or machines per engagement</strong> — don't mix clients or carry data between ops</li>
+      <li>Store credentials, keys, and notes in <strong>encrypted vaults</strong>, not plaintext files on the desktop</li>
+      <li>Scope creep happens at the file system level too — <strong>know exactly what data you hold</strong> for each engagement</li>
+      <li>Clean up engagement artifacts when the op ends — <strong>don't accumulate client data indefinitely</strong></li>
+      <li>Private keys and auth material should <strong>not live in the same place as your reporting drafts</strong></li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">THE PRACTICAL REASON</div>
+        Mixing engagement data across clients or machines creates data handling risk — and a messy incident if your laptop is lost or your VM is compromised. Clean separation protects you and the client.
+      </div>
+      <div class="box red" style="margin-top:10px">
+        <div class="box-label">COMMON FAILURE</div>
+        Verbose tool output prints full paths, credentials, and target names to a terminal session that gets screenshotted, screen-recorded, or logged. What's on screen during an op is part of your data handling posture.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 3 — PRINCIPLE 02: CLEANUP IS DOCTRINE
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="3">
+  <div class="ghost">02</div>
+  <div class="eyebrow">Principle 02</div>
+  <div class="heading">Cleanup Is Doctrine,<br>Not Afterthought</div>
+  <div class="lesson">Self-cleaning tools are better than tools with cleanup steps. The best evidence is evidence that was never written.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>Every deployed capability should know <strong>how to remove itself completely</strong></li>
+      <li>Automate cleanup by <strong>time window</strong>, not by file path — catches what you forgot</li>
+      <li>Persistence that <strong>removes itself after triggering</strong> leaves no investigable artifact</li>
+      <li>Run <strong>two cleanup layers</strong>: automated time-window sweep, then manual log verification</li>
+      <li>Establish a <strong>fixed cleanup cadence</strong> during persistent access — hourly, not reactive</li>
+      <li>Patch the <strong>event writer</strong>, not the event log — never-written evidence can't be recovered</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">KEY DISTINCTION</div>
+        Cleanup by file name requires remembering what you deployed.<br><br>
+        Cleanup by time window removes <em>everything changed in the last N hours</em> — including what you forgot to track.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">GOLD STANDARD</div>
+        Persistence fires → executes payload → deletes the trigger, the payload, the persistence mechanism, and itself. A forensic investigator finds only the process — not how it arrived.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 4 — PRINCIPLE 03: FIND YOUR LAYER
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="4">
+  <div class="ghost">03</div>
+  <div class="eyebrow">Principle 03</div>
+  <div class="heading">Map EDR Coverage.<br>Operate in the Gaps.</div>
+  <div class="lesson">Study detection rules before you arrive. Know what the SOC actually alerts on — not what you assume it alerts on.</div>
+  <div class="grid wide">
+    <ul class="pts">
+      <li>Before the engagement: read published <strong>Sigma, Elastic, and Sentinel detection rules</strong> — they tell you exactly what defenders are actively monitoring</li>
+      <li>Passively identify EDR products via <strong>C:\Windows\System32\Drivers altitude numbers</strong> — each minifilter has a registered altitude; cross-reference against known EDR drivers without running a single enumeration command</li>
+      <li>Use <strong>BOFs (Beacon Object Files)</strong> for on-host recon — executes in the implant process, no cmd.exe, no PowerShell, no cross-process injection, no detectable parent-child chain</li>
+      <li>EDR userland hooks sit in NTDLL — <strong>direct syscalls bypass the hook before it fires</strong>; the event is never generated</li>
+      <li>COM, WMI, DCOM, and named pipes are <strong>consistently less covered</strong> than standard Win32 API paths</li>
+      <li><strong>Validate in a lab with the target EDR</strong> before running techniques on the live engagement — find what trips it before it counts</li>
+      <li>Study <strong>MITRE ATT&CK evaluation reports</strong> for the target EDR — controlled-environment testing that shows exactly which techniques were detected and which were missed; more reliable than vendor marketing</li>
+    </ul>
+    <div>
+      <div class="layers">
+        <div class="layer on">Detection Rules (Sigma/Elastic) <span>READ BEFORE OP</span></div>
+        <div class="layer on">EDR Userland Hooks (NTDLL) <span>BYPASS W/ SYSCALLS</span></div>
+        <div class="layer on">ETW Telemetry Providers <span>KNOW WHICH ARE CONSUMED</span></div>
+        <div class="layer">COM / WMI / DCOM <span>LOWER COVERAGE</span></div>
+        <div class="layer">BOF In-Process Execution <span>NO PROCESS CHAIN</span></div>
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">ALTITUDE NUMBER RECON</div>
+        C:\Windows\System32\Drivers listings reveal every installed minifilter. Each has an altitude in the 3xxxx–4xxxx range. Cross-reference against public altitude databases to identify CrowdStrike, SentinelOne, Defender, etc. — passively, before running anything.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 5 — PRINCIPLE 04: BLEND IN
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="5">
+  <div class="ghost">04</div>
+  <div class="eyebrow">Principle 04</div>
+  <div class="heading">Blend Into<br>the Environment</div>
+  <div class="lesson">The less you look like an attacker, the less you'll be detected as one. The disguise must be exact, not approximate.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>Match binary metadata to <strong>existing legitimate tools exactly</strong> — company name, version, internal name, all of it</li>
+      <li>Use OS-native mechanisms: <strong>COM objects, services, WMI, scheduled tasks</strong> — not novel patterns</li>
+      <li>Store data in locations that are <strong>audited less aggressively</strong> than the obvious ones</li>
+      <li>Use <strong>opaque identifiers</strong> (GUIDs, version strings) — human-readable names stand out in audits</li>
+      <li>Traffic should be <strong>indistinguishable from expected background noise</strong> on that specific network</li>
+    </ul>
+    <div>
+      <ul class="dguide">
+        <li><span class="mk" style="color:var(--red)">✗</span><span>No disguise — trivially identifiable</span></li>
+        <li><span class="mk" style="color:#888">~</span><span>Approximate match — fails close inspection</span></li>
+        <li class="good"><span class="mk" style="color:var(--amber)">✓</span><span style="color:var(--text)">Exact metadata match — passes casual audit</span></li>
+        <li class="best"><span class="mk" style="color:#90C878">✓✓</span><span style="color:#90C878">OS-native mechanism — no disguise needed at all</span></li>
+      </ul>
+      <div class="box" style="margin-top:14px">
+        <div class="box-label">NAMING DISCIPLINE</div>
+        Registry values that look like GUIDs, services named after real Windows components, exports named after legitimate DLL entry points. The investigator's eye skips what looks familiar.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 6 — PRINCIPLE 05: KNOW YOUR BATTLEFIELD
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="6">
+  <div class="ghost">05</div>
+  <div class="eyebrow">Principle 05</div>
+  <div class="heading">Know Your Target<br>Before You Act</div>
+  <div class="lesson">Survey before you deploy. The environment determines what you use. Blind deployment is how engagements go sideways.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>Enumerate security software <strong>before deploying anything</strong> — it changes your tool selection entirely</li>
+      <li>Understand the <strong>network topology and segmentation</strong> before establishing C2 paths</li>
+      <li>Real attackers may already be present — <strong>cohabitation on client networks happens</strong>, and your activity can interact with theirs in ways that alert defenders</li>
+      <li>Look for cohabitation signals: <strong>persistence you didn't plant</strong> (scheduled tasks, services, run keys, WMI subscriptions), unexpected outbound traffic patterns, suspicious DLLs in System32</li>
+      <li>If you find live malware: <strong>don't touch it, document it, and notify the client</strong> — proceeding risks conflating your activity with a real incident</li>
+      <li>Scope what you touch: <strong>triggering real malware or disrupting a live IR investigation</strong> creates serious out-of-scope risk that no ROE covers</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">COHABITATION IN PRACTICE</div>
+        Red teams have landed on networks actively being worked by real threat actors. If you trigger their tooling, modify shared footholds, or appear in the same logs, the client's IR team cannot distinguish your activity from the real incident. Survey before you deploy — every time.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">WHAT TO LOOK FOR</div>
+        Odd persistent processes · standard persistence you didn't create · C2 beacon timing patterns from unexpected binaries · modified system files · known APT IOCs in running processes or network connections.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 7 — PRINCIPLE 06: C2 DISCIPLINE
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="7">
+  <div class="ghost">06</div>
+  <div class="eyebrow">Principle 06</div>
+  <div class="heading">C2 Channel Discipline</div>
+  <div class="lesson">The most detectable moment is first contact. Design every aspect of your C2 around defeating that detection window.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>Use channels that <strong>blend with expected traffic</strong> — OS update services, approved enterprise protocols</li>
+      <li><strong>Sleep before the first callback</strong> — the exploit→outbound gap is the primary behavioral detection window</li>
+      <li>Use your implant's <strong>SOCKS proxy for internal network recon</strong> — traffic appears as normal user web browsing from the endpoint, not scanner or tool-shaped connections</li>
+      <li>Accessing internal resources (SharePoint, wikis, intranet portals) <strong>through SOCKS blends with legitimate user activity</strong> — no new outbound patterns created</li>
+      <li>Assign <strong>unique per-deployment identifiers</strong> — concurrent operations need deconfliction</li>
+      <li>Route traffic through <strong>legitimate host processes</strong>, not the implant binary itself — parent process matters to every EDR</li>
+      <li><strong>Mirror the installed browser's exact user-agent</strong> in your C2 HTTP profile — post-access, check the browser version; an anomalous user-agent string is a trivial detection signal that most operators miss</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">SOCKS AS COVER</div>
+        Lateral recon through a SOCKS proxy looks like the compromised user browsing internal apps. Direct tool connections from your implant create new, distinct traffic signatures. One of these is invisible — the other is not.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">THE SLEEP PRINCIPLE</div>
+        A 10-second delay before first callback is invisible to a human analyst. It defeats every behavioral sandbox that flags on an immediate post-exploit outbound connection.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 8 — PRINCIPLE 07: FAIL-SAFES
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="8">
+  <div class="ghost">07</div>
+  <div class="eyebrow">Principle 07</div>
+  <div class="heading">Build In<br>Fail-Safe Mechanisms</div>
+  <div class="lesson">Every capability you deploy needs an exit. Build it before deployment — not after something goes wrong.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li><strong>Self-destruct must be one action</strong> — not a multi-step checklist that gets done partially</li>
+      <li>Time-limit all deployments: <strong>auto-terminate after N callbacks or T hours</strong></li>
+      <li><strong>Cryptographically authenticate commands</strong> — an implant that responds to unauthenticated commands can be commandeered</li>
+      <li>Include an <strong>in-place upgrade path</strong> — replace running implants without touching the target manually</li>
+      <li><strong>Beacon count self-kill</strong>: an implant that can't terminate itself becomes evidence that persists indefinitely</li>
+      <li>Exposure timers prevent capabilities from <strong>lingering past their operational window</strong></li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">BURN SEQUENCE PRINCIPLE</div>
+        One command → implant removes its persistence, its artifacts, and itself, then confirms completion.<br><br>If the burn requires more than one operator action, it will eventually be done only partially — under pressure, the last step gets skipped.
+      </div>
+      <div class="box red" style="margin-top:10px">
+        <div class="box-label">COMMANDEERING RISK</div>
+        Without cryptographic command authentication, a discovered implant can be turned and used against you. Sign every command batch. Verify before executing.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 9 — PRINCIPLE 08: OPERATIONAL TEMPO
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="9">
+  <div class="ghost">08</div>
+  <div class="eyebrow">Principle 08</div>
+  <div class="heading">Depth Over Speed.<br>Patience Is a Technique.</div>
+  <div class="lesson">Rushing recon creates behavioral signatures. Knowing the environment better than the defenders takes time — and that time pays off.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>Red teams are not penetration tests — <strong>resist the fast-compromise mentality</strong>; depth of recon directly determines quality of access</li>
+      <li>Rushing generates detectable patterns: <strong>burst API calls, irregular enumeration timing, unusual request volumes</strong> all stand out against baseline</li>
+      <li>Establish a <strong>consistent rhythm early</strong>: beacons, cleanup, and collection on a fixed cadence that blends with normal user activity</li>
+      <li>Behavioral detection looks for <strong>deviations from baseline</strong>, not just individually suspicious actions — consistency is cover</li>
+      <li><strong>Silence is a deliberate choice</strong>, not an absence of action — idle periods should match the user's normal behavior pattern</li>
+      <li>Tune timing <strong>per target and per user account</strong>: a service account beaconing at 3am is an anomaly; a user account at 9am is not</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">CADENCE IN PRACTICE</div>
+        Automated hourly artifact sweep + manual log verification = two independent cleanup passes. The automated pass catches everything. The manual pass confirms the automated pass worked. Neither is optional.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">CONFIGURABLE BY DESIGN</div>
+        Sleep durations, beacon intervals, and cleanup windows should all be <em>operator-tunable</em> per deployment — not hardcoded. Different targets demand different timing postures.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 10 — PRINCIPLE 09: LAYER EVERYTHING
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="10">
+  <div class="ghost">09</div>
+  <div class="eyebrow">Principle 09</div>
+  <div class="heading">Layer Everything.</div>
+  <div class="lesson">No single point of failure. No single point of detection. Discovery of one component reveals nothing about any other.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>Deploy <strong>multiple independent persistence mechanisms</strong> — if one is found, others survive undetected</li>
+      <li>Maintain <strong>multiple C2 channels</strong> — if one is blocked, operations continue through others</li>
+      <li>Components should <strong>not know about each other</strong> — compartmentation at the tool level, not just the operator level</li>
+      <li>Internal coordination happens via <strong>local inter-process communication</strong>, not through external C2</li>
+      <li>Discovery of one component should yield <strong>zero information about any other component</strong></li>
+      <li>Redundant mechanisms at <strong>different layers</strong> mean no single defensive action neutralizes the operation</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">COMPARTMENTATION IN PRACTICE</div>
+        If a network driver is detected and removed, the persistence mechanism should be unaffected — and vice versa. The investigator who finds the driver learns nothing about the persistence, and nothing about C2.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">THE FRAMEWORK PRINCIPLE</div>
+        Components coordinate locally. The operator sees results, not component state. The framework handles redundancy; the operator handles the mission.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 11 — PRINCIPLE 10: PRE-ACCESS OSINT
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="11">
+  <div class="ghost">10</div>
+  <div class="eyebrow">Principle 10 — Before You Touch Anything</div>
+  <div class="heading">Pre-Access OSINT</div>
+  <div class="lesson">Public data shapes the entire operation. The best recon happens before you send a single packet.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li><strong>LinkedIn</strong>: org chart, who runs the SOC, CISO background, recent hires on the security team — know your defenders before you meet them</li>
+      <li><strong>Job postings</strong> reveal the stack — "Senior CrowdStrike Falcon Engineer" tells you the EDR; "Splunk architect" tells you the SIEM; MFA admin postings tell you the auth provider</li>
+      <li><strong>GitHub, Shodan, Censys, cert transparency</strong>: leaked credentials, exposed services, subdomains, legacy infrastructure the client forgot about</li>
+      <li>Acquisitions and subsidiaries often mean <strong>less-hardened environments with full domain trust</strong> into the parent — a softer path in</li>
+      <li>Business rhythm: <strong>patch Tuesdays, fiscal year-end, product launches</strong> — all change defender attention and on-call capacity</li>
+      <li>Study <strong>published Sigma, Elastic, and Sentinel detection rules</strong> before the engagement — they tell you exactly what the SOC is alerting on</li>
+      <li><strong>Identify cloud sync services in use</strong> (OneDrive, Dropbox, Box) from job postings and LinkedIn — categorized, trusted domains that blend data movement with normal user activity</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">JOB POSTING RECON</div>
+        "Senior CrowdStrike Falcon Engineer — must tune exclusions and manage policies" tells you: Falcon is deployed, actively managed, and has exclusions. "No prior EDR experience required" tells the opposite. All from a public listing.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">LAB VALIDATION</div>
+        Once you know the target EDR from OSINT, spin it up in a lab. Test your full toolchain before it runs on the engagement. A technique that trips CrowdStrike in the lab will trip it live — find out before it counts.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 12 — PRINCIPLE 11: POST-ACCESS ON-HOST RECON
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="12">
+  <div class="ghost">11</div>
+  <div class="eyebrow">Principle 11 — Once You're In</div>
+  <div class="heading">Post-Access:<br>Read the Environment</div>
+  <div class="lesson">Every compromised host is an intelligence platform. Passive local recon gives you the full map before you move.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li><strong>Driver altitudes</strong> (C:\Windows\System32\Drivers) — passively identifies EDR, AV, and security tooling without triggering any enumeration rules</li>
+      <li><strong>PowerShell history</strong> and installed developer tooling (WSL, cloud CLIs, VCS clients, key/config files in home dirs) — reveals what this user can reach and maps lateral movement candidates</li>
+      <li><strong>Browser bookmarks and history</strong> — maps internal resources: intranets, wikis, employee lookup portals, IT systems. Rarely monitored, extremely high signal</li>
+      <li><strong>Communication app data</strong> (chat, email, calendar clients) — IT threads, password reset flows, MFA enrollment emails, active IR discussions. Local app caches persist even after session timeout</li>
+      <li><strong>Help desk and ticketing systems</strong> accessed via SOCKS — service tickets often contain credentials, network diagrams, and infrastructure detail in plain text under the user's existing session</li>
+      <li><strong>DNS cache</strong> — passive network map of what this host has recently talked to; reveals internal infrastructure without any active scanning</li>
+      <li><strong>Honey documents and canary tokens</strong> — identify defensive traps before touching them; isolate suspicious files in a VM before opening</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">SOCKS FOR INTERNAL BROWSING</div>
+        Use implant SOCKS to access SharePoint, Confluence, wikis, and intranet portals through the user's existing session. Traffic looks like normal user web activity — not tool traffic, not scanner traffic. Internal documentation often contains network diagrams, credentials, and infrastructure details that no enumeration script will find.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">POST-RECON DECISION POINTS</div>
+        Before moving: Is escalation worth the risk here, or is lateral movement quieter? Should C2 stay on this host or relocate? What pretext opportunities has this host revealed? Outlook metadata and Slack history answer all three.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE — PRINCIPLE 12: CLOUD & IDENTITY RECON
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="13">
+  <div class="ghost">12</div>
+  <div class="eyebrow">Principle 12 — Cloud-Joined &amp; Hybrid Environments</div>
+  <div class="heading">Cloud &amp; Identity<br>Reconnaissance</div>
+  <div class="lesson">Modern environments authenticate through cloud identity layers. Understand the token infrastructure before touching anything.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li><strong>PRTs (Primary Refresh Tokens)</strong> live in browser processes and LSASS on cloud-joined and hybrid hosts — extract them for seamless access to all Azure-integrated services without re-authenticating</li>
+      <li><strong>Bearer tokens</strong> cached by desktop apps can be replayed directly — no password, no MFA prompt, no phishing required once you have the token</li>
+      <li><strong>Microsoft Graph API</strong> reveals org structure, group membership, conditional access policies, and registered devices — available to any authenticated user, no admin privilege required</li>
+      <li><strong>Cloud sync services as exfil staging</strong> — OneDrive, SharePoint, and similar are trusted, categorized domains; data transiting them is indistinguishable from normal sync activity</li>
+      <li>Determine if the host is <strong>cloud-joined, hybrid, or on-prem only</strong> early — this determines which token types are present and which attack paths are available</li>
+      <li>Azure AD / Entra ID audit logs have <strong>limited visibility into token reuse</strong> — authenticated API calls with a valid Bearer token often generate no SIEM alert</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">TOKEN REUSE PATH</div>
+        Cloud-joined host → extract tokens from browser/app cache → request access to Graph, SharePoint, Teams, Exchange → full org recon under the existing user identity. Defender sees normal authenticated API calls, not exploitation activity.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">GRAPH AS RECON</div>
+        A standard user token can enumerate all users, groups, roles, device registrations, and conditional access policies via Graph API. No elevated privilege. No LDAP queries. No AD traffic. All HTTPS to microsoft.com — indistinguishable from legitimate app behavior.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE — PRINCIPLE 13: ANTI-FORENSIC BY DESIGN
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="14">
+  <div class="ghost">13</div>
+  <div class="eyebrow">Principle 13</div>
+  <div class="heading">Stay Hidden<br>From EDR Telemetry</div>
+  <div class="lesson">EDR visibility depends on telemetry pipelines. Understand those pipelines and you understand what gets seen — and what doesn't.</div>
+  <div class="grid">
+    <ul class="pts">
+      <li>EDRs consume <strong>ETW (Event Tracing for Windows)</strong> providers — patching specific providers removes that telemetry from the EDR's view entirely</li>
+      <li><strong>Direct syscalls</strong> bypass userland API hooks that EDR places on NTDLL — the hook never fires, the event is never generated</li>
+      <li>Timestamp matching at install time prevents <strong>filesystem timeline anomalies</strong> that DFIR investigators anchor on</li>
+      <li>Self-erasing persistence leaves no artifact for EDR to find <strong>after the trigger fires</strong></li>
+      <li>Cleanup by time window is more robust than cleanup by filename — <strong>catches what you forgot to track</strong></li>
+      <li>Cover tracks as you go, not at exit — <strong>reactive cleanup misses things</strong>, especially under time pressure</li>
+    </ul>
+    <div>
+      <div class="box">
+        <div class="box-label">ETW PATCHING IN PRACTICE</div>
+        Many EDRs rely on Microsoft-Threat-Intelligence and other ETW providers for process injection and shellcode telemetry. Patching the EtwEventWrite function in a specific process removes that process from the EDR's telemetry — without touching the EDR itself.
+      </div>
+      <div class="box" style="margin-top:10px">
+        <div class="box-label">THE ANOMALY PRINCIPLE</div>
+        DFIR works by finding things that don't fit. Timestamps out of order, DLLs loaded from temp paths, processes with no parent. Produce no anomalies and there is nothing to anchor the investigation.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 13 — FAILURE MODES
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="13">
+  <div class="ghost">⚠</div>
+  <div class="eyebrow">Lessons From Failure</div>
+  <div class="heading">What Actually<br>Burns Operations</div>
+  <div class="lesson">These failure modes appear in real, sophisticated operations. They share a single common cause.</div>
+  <div class="grid">
+    <div>
+      <div class="fail">
+        <h4>HARDCODED FALLBACK VALUES</h4>
+        <p>A shortcut taken under time pressure — a jokey test string, a fixed default key — ships into production and stays there. Every deployment using that fallback is identically keyed.</p>
+      </div>
+      <div class="fail">
+        <h4>VERBOSE OUTPUT DURING LIVE OPS</h4>
+        <p>Debug-grade tool output prints full paths, hostnames, and credentials to a terminal that gets screen-recorded or logged. What's visible on screen during an op is part of your data handling posture.</p>
+      </div>
+      <div class="fail">
+        <h4>CLEARTEXT OPERATIONAL NOTES</h4>
+        <p>Target hostnames, credentials, and tactical decisions written to unencrypted notes on the operator machine. If the machine is lost or compromised mid-engagement, the notes hand the client a full record of the op.</p>
+      </div>
+    </div>
+    <div>
+      <div class="fail">
+        <h4>INCONSISTENT HARDENING</h4>
+        <p>95% of the framework is hardened. A single config file, a single default value, a single code path that was "good enough for testing" is the entry point for reversal or attribution.</p>
+      </div>
+      <div class="fail">
+        <h4>OPERATOR HOSTNAME IN TARGET LOGS</h4>
+        <p>RDP to a target logs your source hostname in Windows Security Event 4624. A VM named "KALI-PENTEST" or a personal MacBook hostname appearing in auth logs is direct attribution. Rename machines before every engagement — not after access is established.</p>
+      </div>
+      <div class="box red" style="margin-top:14px">
+        <div class="box-label">THE COMMON CAUSE</div>
+        Every failure mode above results from treating operational security as a <em>preference</em> that can be traded off under pressure — rather than as a non-negotiable constraint on every decision, at every stage.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 14 — THE META-PRINCIPLE
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="14">
+  <div class="ghost">↑</div>
+  <div class="eyebrow">The Meta-Principle — Above All Others</div>
+  <div class="heading">Opsec That Depends<br>on Memory Will Fail</div>
+  <div class="lesson">The framework enforces operational security. The operator executes the mission. These are not the same job.</div>
+  <div class="grid single">
+    <div>
+      <div class="meta-stmt">
+        "Operations that succeed at scale succeed because <em>failure is architecturally difficult</em> — not because operators never make mistakes."
+      </div>
+      <ul class="pts">
+        <li><strong>Self-cleaning tools</strong> &gt; tools with cleanup checklists that depend on memory</li>
+        <li><strong>Encrypted storage enforced by default</strong> &gt; "remember to encrypt your notes"</li>
+        <li><strong>Automatic timestamp matching at install</strong> &gt; "don't forget to match timestamps"</li>
+        <li><strong>Signed, authenticated commands</strong> &gt; "only send commands through secure channels"</li>
+        <li><strong>Built-in exposure timers</strong> &gt; "remember to remove the implant when the op ends"</li>
+        <li>If opsec requires the operator to <strong>do the right thing every time</strong>, it will eventually fail</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SLIDE 15 — QUICK REFERENCE
+═══════════════════════════════════════════════════════ -->
+<div class="slide" data-i="15" style="padding-top:46px">
+  <div class="eyebrow">Quick Reference — All Principles</div>
+  <div class="heading" style="margin-bottom:18px">The 13 Principles of Adversarial Tradecraft</div>
+  <div class="refgrid">
+    <div class="ref">
+      <div class="ref-n">01</div>
+      <div class="ref-t">SEPARATE ENVIRONMENTS</div>
+      <div class="ref-d">Dedicated VM per engagement. Encrypted vaults. Clean up when the op ends.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">02</div>
+      <div class="ref-t">CLEANUP IS DOCTRINE</div>
+      <div class="ref-d">Self-cleaning tools. Time-window sweeps. Automated first, manual verification second.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">03</div>
+      <div class="ref-t">MAP EDR COVERAGE</div>
+      <div class="ref-d">Detection rules, altitude recon, BOFs, direct syscalls, MITRE evals, lab validation.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">04</div>
+      <div class="ref-t">BLEND IN</div>
+      <div class="ref-d">Exact metadata match. OS-native mechanisms. Opaque identifiers. No novel patterns.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">05</div>
+      <div class="ref-t">SURVEY FIRST</div>
+      <div class="ref-d">Enumerate defenses. Watch for cohabitation with real threats. Environment drives tool selection.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">06</div>
+      <div class="ref-t">C2 DISCIPLINE</div>
+      <div class="ref-d">Sleep before first contact. SOCKS for internal recon. Mirror browser UA. Unique IDs per deployment.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">07</div>
+      <div class="ref-t">FAIL-SAFES</div>
+      <div class="ref-d">One-action burn. Exposure timers. Cryptographic command auth. Upgrade path built in.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">08</div>
+      <div class="ref-t">DEPTH OVER SPEED</div>
+      <div class="ref-d">Fixed cadence. Automated sweeps. Timing tuned per target. Silence is deliberate.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">09</div>
+      <div class="ref-t">LAYER EVERYTHING</div>
+      <div class="ref-d">Independent mechanisms. Compartmented components. Discovery of one reveals nothing.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">10</div>
+      <div class="ref-t">PRE-ACCESS OSINT</div>
+      <div class="ref-d">LinkedIn, job postings, GitHub, Shodan. Know the stack and defenders before touching anything.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">11</div>
+      <div class="ref-t">POST-ACCESS RECON</div>
+      <div class="ref-d">Driver altitudes, PS history, browser bookmarks, comms history, DNS cache. Read the host before moving.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">12</div>
+      <div class="ref-t">CLOUD &amp; IDENTITY</div>
+      <div class="ref-d">PRT extraction, Bearer token reuse, Graph API recon. Cloud auth layers leave fewer audit trails.</div>
+    </div>
+    <div class="ref">
+      <div class="ref-n">13</div>
+      <div class="ref-t">HIDE FROM EDR</div>
+      <div class="ref-d">ETW patching, direct syscalls, timestamp matching. Know the telemetry pipeline and what removes you from it.</div>
+    </div>
+    <div class="ref accent" style="grid-column: 2 / -1">
+      <div class="ref-n">∞</div>
+      <div class="ref-t">THE META-PRINCIPLE</div>
+      <div class="ref-d">The framework enforces opsec. The operator executes the mission. Failure must be architecturally difficult.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+const progress = document.getElementById('progress');
+const counter = document.getElementById('counter');
+const prev = document.getElementById('prev');
+const next = document.getElementById('next');
+const total = slides.length;
+let cur = 0;
+
+function go(n) {
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(total - 1, n));
+  slides[cur].classList.add('active');
+  counter.textContent = String(cur + 1).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+  progress.style.width = ((cur + 1) / total * 100) + '%';
+  prev.style.opacity = cur === 0 ? '0.2' : '1';
+  next.style.opacity = cur === total - 1 ? '0.2' : '1';
+}
+
+prev.addEventListener('click', () => go(cur - 1));
+next.addEventListener('click', () => go(cur + 1));
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(cur + 1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); go(cur - 1); }
+});
+
+let tx = 0;
+document.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+document.addEventListener('touchend',   e => {
+  const dx = e.changedTouches[0].clientX - tx;
+  if (dx < -50) go(cur + 1);
+  if (dx >  50) go(cur - 1);
+}, {passive:true});
+
+go(0);
+</script>
+</body>
+</html>

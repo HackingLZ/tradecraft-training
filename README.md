@@ -4,6 +4,8 @@ Interactive slide deck covering operational security principles for authorized r
 
 **Live site:** [hackinglz.github.io/tradecraft-training](https://hackinglz.github.io/tradecraft-training/tradecraft-training.html)
 
+![Adversarial Tradecraft title slide](screenshot.png)
+
 ## Overview
 
 Module 1 of an adversarial operations training series. Derived from analysis of real-world operations — focused on generalizable principles rather than specific tools or targets.

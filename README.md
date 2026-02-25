@@ -32,6 +32,10 @@ Module 1 of an adversarial operations training series. Derived from analysis of 
 | 12 | Cloud & identity — PRT extraction, Bearer token reuse, Graph API recon |
 | 13 | Hide from EDR — ETW patching, direct syscalls, timestamp matching |
 
+## License
+
+[CC BY 4.0](LICENSE) — free to use and share with attribution to HackingLZ.
+
 ## Navigation
 
 Arrow keys, on-screen buttons, or swipe to move between slides.

@@ -3,6 +3,7 @@
 Interactive slide deck covering operational security principles for authorized red team operations and penetration testing engagements.
 
 **Live site:** [hackinglz.github.io/tradecraft-training](https://hackinglz.github.io/tradecraft-training/tradecraft-training.html)
+**Repo:** [github.com/HackingLZ/tradecraft-training](https://github.com/HackingLZ/tradecraft-training)
 
 ![Adversarial Tradecraft title slide](screenshot.png)
 

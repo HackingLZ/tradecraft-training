@@ -6,6 +6,8 @@ Interactive slide deck covering operational security principles for authorized r
 
 ![Adversarial Tradecraft title slide](screenshot.png)
 
+![The 13 Principles of Adversarial Tradecraft](screenshot-principles.png)
+
 ## Overview
 
 Module 1 of an adversarial operations training series. Derived from analysis of real-world operations — focused on generalizable principles rather than specific tools or targets.
